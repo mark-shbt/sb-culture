@@ -5,6 +5,9 @@ Scores for Sharebite Baby is [here](sharebb/scores.csv)
 
 Scores for Guessing Movie is [here](movie-nerds/scores.csv)
 
+# The Parser
+The parser goes through the chat messages and will mark the first message sent by the user as a guess. Any subsequent messages by the same user within the same guessing round will be discarded. So please don't send any unnecessary messages while the guessing period is open!
+
 # Scoring System
 The scoring system is implemented as following:
 * +5 points per correct guess
