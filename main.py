@@ -2,11 +2,11 @@ import os
 from datetime import datetime
 from decimal import Decimal
 import string
-from file_writer import FileWriter
+from file_io import FileIO
 from thefuzz import fuzz
-from game import GameModes, GameState, Scores
+from game import GameModes, GameState
 from user import User
-from constants import SHAREBB_DIR, MOVIE_NERDS_DIR, TIME_REGEX, SIMILARITY_THRESHOLD
+from constants import MOVIE_NERDS_SCORE, SHAREBB_DIR, MOVIE_NERDS_DIR, SHAREBB_SCORE, TIME_REGEX, SIMILARITY_THRESHOLD
 
 
 def set_game_answer(answer: str, state: GameState) -> None:
@@ -60,9 +60,10 @@ def calculate_score(user: User, state: GameState):
     
     user.calculate_score()
 
-def parse_through_chat(lines: list[str], curr_user: User):
+def parse_through_chat(lines: list[str], users_list: list[User], game_state: GameState):
     # Get all the stats for current file
     skip_guess = False
+    curr_user = None
     for index, line in enumerate(lines):
         if not line:
             continue
@@ -83,13 +84,11 @@ def parse_through_chat(lines: list[str], curr_user: User):
             if TIME_REGEX.fullmatch(next_line):
                 # next line is time so current line is person name
                 # only care about users not in the list since only first guess counts
-                if "You" == curr_line:
-                    continue
-                curr_user = get_user(guessed_users, curr_line)
+                curr_user = get_user(users_list, curr_line)
 
                 if not curr_user:
                     curr_user = User(curr_line)
-                    guessed_users.append(curr_user)
+                    users_list.append(curr_user)
                     skip_guess = False
                 if curr_user.guess:
                     skip_guess = True
@@ -99,16 +98,13 @@ def parse_through_chat(lines: list[str], curr_user: User):
             else:
                 # next line isn't time so it's a message
                 # Team Reveal for Sharebite baby
-                if "team" in curr_line and "--" in curr_line:
-                    game_state.team_reveal = True
-                    continue
+                if game_state.game_mode == GameModes.SHAREBB:
+                    if "team" in curr_line and "--" in curr_line:
+                        game_state.team_reveal = True
+                        continue
                 if skip_guess:
                     continue
                 unformatted_line = curr_line.lower()
-                # if (curr_user.name == "Ben Neal"):
-                #     import pdb; pdb.set_trace()
-                if curr_user == None:
-                    import pdb; pdb.set_trace()
                 curr_user.guess = unformatted_line.translate(str.maketrans('', '', string.punctuation))
                 calculate_score(curr_user, game_state)
         else:
@@ -120,49 +116,42 @@ def parse_through_chat(lines: list[str], curr_user: User):
             calculate_score(curr_user, game_state)
 
 
-def reset_game(state: GameState, users: list[User], curr_user: User) -> None:
+def reset_game(state: GameState, users: list[User]) -> None:
     state.reset()
     for user in users:
         user.reset()
-    curr_user = None
 
+def get_dir_name(game_state: GameState) -> list[str]:
+    if game_state.game_mode == GameModes.SHAREBB:
+        return [SHAREBB_DIR, SHAREBB_SCORE]
+    if game_state.game_mode == GameModes.GUESS_MOVIES:
+        return [MOVIE_NERDS_DIR, MOVIE_NERDS_SCORE]
 
-guessed_users = list()
-curr_user = None
+def load_users(file_name: str) -> list[User]:
+    users_list = []
+    csv_file = open(file_name, 'r')
+    csv_file.readline()
+    lines = csv_file.readlines()
+    for line in lines:
+        user_info = line.split(',')
+        user = User(user_info[0], int(user_info[1]), int(user_info[2]), int(user_info[3]))
+        users_list.append(user)
+    return users_list
+
 game_state = GameState(GameModes.SHAREBB)
 
-files = os.listdir(SHAREBB_DIR)
+dir_name, score_name = get_dir_name(game_state)
+files = os.listdir(dir_name)
+users_list = load_users(score_name)
 files.sort()
+
 for file in files:
-    reset_game(game_state, guessed_users, curr_user)
-    file_name = f'{SHAREBB_DIR}{file}'
-    print(f"Current file {file_name}")
+    reset_game(game_state, users_list)
+    file_name = f'{dir_name}{file}'
     o_file = open(file_name, 'r')
     lines = o_file.readlines()
-    parse_through_chat(lines, curr_user)
+    parse_through_chat(lines, users_list, game_state)
     o_file.close()
 
-
-print('=================================')
-print('name,total points,first close guess,first perfect guess')
-for user in guessed_users:
-    print(f'{user.name},{user.points},{user.num_first_close_guess},{user.num_first_perfect_guess}')
-print('=================================')
-
-# # Write them to the db/
-# FileWriter.sort_and_write(
-
-# # Add everything in curr file to master tracking
-# for key, value in curr_users.items():
-#     if key in USERS:
-#         USERS[key] += value
-#     else:
-#         USERS[key] = value
-
-# for key, value in curr_words.items():
-#     if key in WORDS:
-#         WORDS[key] += value
-#     else:
-#         WORDS[key] = value
-
-# FileWriter.sort_and_write(USERS, WORDS, to_master=True)
+sorted_users = sorted(users_list, key=lambda u: (u.name))
+FileIO.write_to_file(sorted_users, score_name)

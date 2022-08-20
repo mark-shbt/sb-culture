@@ -1,3 +1,4 @@
+Answer: Joker
 Alex Zaharoff
 4:25 PM
 
@@ -54,7 +55,3 @@ Celine Aguilar
 4:25 PM
 
 joker
-You
-4:25 PM
-
-end

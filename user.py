@@ -2,9 +2,9 @@ from game import Scores
 
 
 class User:
-    def __init__(self, name, first_close_guess: int = 0, first_perfect_guess: int = 0):
+    def __init__(self, name, points: int = 0, first_close_guess: int = 0, first_perfect_guess: int = 0):
         self.name = name
-        self.points = 0
+        self.points = points
         self.correct_guess = False
         self.first_close_guess = False
         self.first_perfect_guess = False
@@ -39,23 +39,28 @@ class User:
         if not self.correct_guess:
             return self.points
 
-        print(f'{self.name} guessed {self.guess} correctly')
+        gained_points = 0
+        
         # For Sharebite Babies
         if self.post_team_reveal_guess:
-            self.points += Scores.POST_TEAM_REVEAL_GUESS
+            gained_points += Scores.POST_TEAM_REVEAL_GUESS
         else:
-            self.points += Scores.CORRECT_GUESS
+            gained_points += Scores.CORRECT_GUESS
 
         if self.correct_guess_has_typos:
-            self.points += Scores.CORRECT_GUESS_HAS_TYPOS
+            gained_points += Scores.CORRECT_GUESS_HAS_TYPOS
 
         if self.first_close_guess:
-            self.points += Scores.FIRST_CLOSE_GUESS
+            gained_points += Scores.FIRST_CLOSE_GUESS
             self.num_first_close_guess += 1
 
         if self.first_perfect_guess:
-            self.points += Scores.FIRST_PERFECT_GUESS
+            gained_points += Scores.FIRST_PERFECT_GUESS
             self.num_first_perfect_guess += 1
+        
+        # print(f'{self.name} guessed {self.guess} correctly. Gained: {gained_points}, total points: {self.points}, first close guess: {self.first_close_guess}, perfect guess: {self.first_perfect_guess}')
+
+        self.points += gained_points
 
         return self.points
 

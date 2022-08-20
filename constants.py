@@ -1,6 +1,12 @@
 import re
 
-SHAREBB_DIR = "sharebb/2022-08-18/"
-MOVIE_NERDS_DIR = "movie-nerds/2022-08-18/"
+SHAREBB = "sharebb/"
+SHAREBB_DIR = f"{SHAREBB}2022-08-18/"
+SHAREBB_SCORE = f"{SHAREBB}scores.csv"
+
+MOVIE_NERDS = "movie-nerds/"
+MOVIE_NERDS_DIR = f"{MOVIE_NERDS}2022-08-18/"
+MOVIE_NERDS_SCORE = f"{MOVIE_NERDS}scores.csv"
+
 TIME_REGEX = re.compile(r"[0-9]:[0-9]+ PM")
 SIMILARITY_THRESHOLD = 86
