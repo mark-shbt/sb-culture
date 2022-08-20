@@ -44,15 +44,16 @@ def calculate_score(user: User, state: GameState):
     user.correct_guess = True
     
     # Perfect guess
-    if perfect_match and not state.perfect_guess_user:
-        state.perfect_guess_user = user
-        user.first_perfect_guess = True
-    
-    # Not perfect guess so close guesses
-    if not state.close_guess_user:
-        state.close_guess_user = user
-        user.first_close_guess = True
-    user.correct_guess_has_typos = True
+    if perfect_match:
+        if not state.perfect_guess_user:
+            state.perfect_guess_user = user
+            user.first_perfect_guess = True
+    else:
+        # Not perfect guess so close guesses
+        if not state.close_guess_user:
+            state.close_guess_user = user
+            user.first_close_guess = True
+        user.correct_guess_has_typos = True
     
     # For sharebite baby: Guess after team reveal
     if state.game_mode == GameModes.SHAREBB:
