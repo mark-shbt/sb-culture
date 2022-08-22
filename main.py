@@ -11,38 +11,41 @@ from constants import MOVIE_NERDS, SHAREBB, TIME_REGEX, SIMILARITY_THRESHOLD
 
 def set_game_answer(answer: str, state: GameState) -> None:
     if state.game_mode == GameModes.SHAREBB:
-        state.answer = answer.split('Answer: ')[1:][0].lower().strip().split('/')
+        state.answer = answer.split("Answer: ")[1:][0].lower().strip().split("/")
     elif state.game_mode == GameModes.GUESS_MOVIES:
-        state.answer = [answer.split('Answer: ')[1:][0].lower().strip()]
+        state.answer = [answer.split("Answer: ")[1:][0].lower().strip()]
 
 
-def get_similarity_ratio(guess:str, game_answers: list[str]) -> Decimal:
+def get_similarity_ratio(guess: str, game_answers: list[str]) -> Decimal:
     similarities = [fuzz.partial_ratio(guess, answer) for answer in game_answers]
     return max(similarities)
+
 
 def is_perfect_match(guess: str, game_answers: list[str]) -> bool:
     matches = [fuzz.ratio(guess, answer) for answer in game_answers]
     return max(matches) == 100
 
+
 def get_user(users: list[str], name: str) -> User:
-    '''
+    """
     Get user from list of users, if it doesn't exist
     create new user and add to users list
-    '''
+    """
     for user in users:
         if user.name == name:
             return user
     return None
 
+
 def calculate_score(user: User, state: GameState):
     ratio = get_similarity_ratio(user.guess, state.answer)
     perfect_match = is_perfect_match(user.guess, state.answer)
-    
+
     if ratio <= SIMILARITY_THRESHOLD:
         return
-    
+
     user.correct_guess = True
-    
+
     # Perfect guess
     if perfect_match:
         if not state.perfect_guess_user:
@@ -54,12 +57,13 @@ def calculate_score(user: User, state: GameState):
             state.close_guess_user = user
             user.first_close_guess = True
         user.correct_guess_has_typos = True
-    
+
     # For sharebite baby: Guess after team reveal
     if state.game_mode == GameModes.SHAREBB:
         user.post_team_reveal_guess = state.team_reveal
-    
+
     user.calculate_score()
+
 
 def parse_through_chat(lines: list[str], users_list: list[User], game_state: GameState):
     # Get all the stats for current file
@@ -68,11 +72,11 @@ def parse_through_chat(lines: list[str], users_list: list[User], game_state: Gam
     for index, line in enumerate(lines):
         if not line:
             continue
-        
+
         if "Answer: " in line:
             set_game_answer(line, game_state)
             continue
-        
+
         curr_line = line.strip()
         next_index = 0
         if index + 1 != len(lines):
@@ -106,7 +110,9 @@ def parse_through_chat(lines: list[str], users_list: list[User], game_state: Gam
                 if skip_guess:
                     continue
                 unformatted_line = curr_line.lower()
-                curr_user.guess = unformatted_line.translate(str.maketrans('', '', string.punctuation))
+                curr_user.guess = unformatted_line.translate(
+                    str.maketrans("", "", string.punctuation)
+                )
                 calculate_score(curr_user, game_state)
         else:
             # last line is always a msg
@@ -122,20 +128,24 @@ def reset_game(state: GameState, users: list[User]) -> None:
     for user in users:
         user.reset()
 
+
 def get_dir_name(game_state: GameState) -> list[str]:
     if game_state.game_mode == GameModes.SHAREBB:
         return SHAREBB
     if game_state.game_mode == GameModes.GUESS_MOVIES:
         return MOVIE_NERDS
 
+
 def load_users(file_name: str) -> list[User]:
     users_list = []
-    csv_file = open(file_name, 'r')
+    csv_file = open(file_name, "r")
     csv_file.readline()
     lines = csv_file.readlines()
     for line in lines:
-        user_info = line.split(',')
-        user = User(user_info[0], int(user_info[1]), int(user_info[2]), int(user_info[3]))
+        user_info = line.split(",")
+        user = User(
+            user_info[0], int(user_info[1]), int(user_info[2]), int(user_info[3])
+        )
         users_list.append(user)
     return users_list
 
@@ -153,12 +163,12 @@ for game_mode in game_modes:
     # after sorting, scores.csv will always be last so get the latest folder
     working_dir = all_dirs[-2]
     # get all the files in the working_dir
-    files = os.listdir(f'{dir_name}{working_dir}')
+    files = os.listdir(f"{dir_name}{working_dir}")
 
     for file in files:
         reset_game(game_state, users_list)
-        file_name = f'{dir_name}{working_dir}/{file}'
-        o_file = open(file_name, 'r')
+        file_name = f"{dir_name}{working_dir}/{file}"
+        o_file = open(file_name, "r")
         lines = o_file.readlines()
         parse_through_chat(lines, users_list, game_state)
         o_file.close()
