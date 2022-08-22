@@ -6,7 +6,7 @@ from file_io import FileIO
 from thefuzz import fuzz
 from game import GameModes, GameState
 from user import User
-from constants import MOVIE_NERDS_SCORE, SHAREBB_DIR, MOVIE_NERDS_DIR, SHAREBB_SCORE, TIME_REGEX, SIMILARITY_THRESHOLD
+from constants import MOVIE_NERDS, SHAREBB, TIME_REGEX, SIMILARITY_THRESHOLD
 
 
 def set_game_answer(answer: str, state: GameState) -> None:
@@ -110,7 +110,7 @@ def parse_through_chat(lines: list[str], users_list: list[User], game_state: Gam
                 calculate_score(curr_user, game_state)
         else:
             # last line is always a msg
-            # last guess is by a user who guessed already
+            # check if last guess is by a user who guessed already
             if skip_guess:
                 continue
             curr_user.guess = curr_line.lower()
@@ -124,9 +124,9 @@ def reset_game(state: GameState, users: list[User]) -> None:
 
 def get_dir_name(game_state: GameState) -> list[str]:
     if game_state.game_mode == GameModes.SHAREBB:
-        return [SHAREBB_DIR, SHAREBB_SCORE]
+        return SHAREBB
     if game_state.game_mode == GameModes.GUESS_MOVIES:
-        return [MOVIE_NERDS_DIR, MOVIE_NERDS_SCORE]
+        return MOVIE_NERDS
 
 def load_users(file_name: str) -> list[User]:
     users_list = []
@@ -139,20 +139,29 @@ def load_users(file_name: str) -> list[User]:
         users_list.append(user)
     return users_list
 
-game_state = GameState(GameModes.SHAREBB)
 
-dir_name, score_name = get_dir_name(game_state)
-files = os.listdir(dir_name)
-users_list = load_users(score_name)
-files.sort()
+game_modes = [GameModes.SHAREBB, GameModes.GUESS_MOVIES]
 
-for file in files:
-    reset_game(game_state, users_list)
-    file_name = f'{dir_name}{file}'
-    o_file = open(file_name, 'r')
-    lines = o_file.readlines()
-    parse_through_chat(lines, users_list, game_state)
-    o_file.close()
+for game_mode in game_modes:
+    game_state = GameState(game_mode)
 
-sorted_users = sorted(users_list, key=lambda u: (u.name))
-FileIO.write_to_file(sorted_users, score_name)
+    dir_name = get_dir_name(game_state)
+    scores_file = f"{dir_name}scores.csv"
+    all_dirs = os.listdir(dir_name)
+    users_list = load_users(scores_file)
+    all_dirs.sort()
+    # after sorting, scores.csv will always be last so get the latest folder
+    working_dir = all_dirs[-2]
+    # get all the files in the working_dir
+    files = os.listdir(f'{dir_name}{working_dir}')
+
+    for file in files:
+        reset_game(game_state, users_list)
+        file_name = f'{dir_name}{working_dir}/{file}'
+        o_file = open(file_name, 'r')
+        lines = o_file.readlines()
+        parse_through_chat(lines, users_list, game_state)
+        o_file.close()
+
+    sorted_users = sorted(users_list, key=lambda u: (u.name))
+    FileIO.write_to_file(sorted_users, scores_file)
