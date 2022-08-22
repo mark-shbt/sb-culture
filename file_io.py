@@ -1,5 +1,6 @@
-import os
 import datetime
+import os
+
 from user import User
 
 

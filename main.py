@@ -1,12 +1,14 @@
 import os
+import string
 from datetime import datetime
 from decimal import Decimal
-import string
-from file_io import FileIO
+
 from thefuzz import fuzz
+
+from constants import MOVIE_NERDS, SHAREBB, SIMILARITY_THRESHOLD, TIME_REGEX
+from file_io import FileIO
 from game import GameModes, GameState
 from user import User
-from constants import MOVIE_NERDS, SHAREBB, TIME_REGEX, SIMILARITY_THRESHOLD
 
 
 def set_game_answer(answer: str, state: GameState) -> None:
